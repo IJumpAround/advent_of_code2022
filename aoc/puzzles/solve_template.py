@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-os.environ['LOG_LEVEL'] = 'INFO'
+os.environ['LOG_LEVEL'] = 'ERROR'
 from aoc.utils.consts import SAMPLE_FILE, INPUT_FILE
 from aoc.utils.measurement import time_fn
 
