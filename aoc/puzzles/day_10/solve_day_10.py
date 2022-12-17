@@ -111,7 +111,6 @@ def solve(day, sample):
     executing: List[Instruction] = []
     num_executed = 0
     strength = 0
-    finished = []
 
     row, column = 0, 0
     crt = [[' ' for _ in range(W)] for __ in range(H)]
@@ -135,35 +134,27 @@ def solve(day, sample):
                 executing.append(instruction)
             else:
                 raise RuntimeError()
-            # executing.append(instruction)
 
         for fn in executing:
             fn.tick(cycle)
-
 
         print(f'{column=} {row=}, {X=}')
         if abs(column - X) <= 1:
             crt[row][column] = '#'
 
-
-        # print(f'{str(instruction):<44} | {cycle=} {X=:<5} {cycle * X:<5}')
-        if (cycle % 40 == 0):
+        if cycle % 40 == 0:
             print(f'{executing[0] if executing else""} {cycle=} {num_executed=} {X=} signal={cycle}x{X} = {cycle * X}')
-            # print(executing[0] if executing else'')
             row += 1
             column = -1
             strength += cycle * X
         elif cycle > 240:
             break
 
-
         assert len(executing) <= 1
-
 
         # End of cycle execution
         for fn in executing:
             if fn.should_execute(after_tick=True):
-                # print('executed post tick', fn, f'{X=} {cycle=} {cycle * X}')
                 fn.do_execute()
                 num_executed += 1
                 break
@@ -174,7 +165,6 @@ def solve(day, sample):
         if not executing and waiting:
             executing.append(waiting.pop(0))
 
-    # print(f'{cycle=} {X=} {cycle * X}')
     print(f"The answer is {strength}\n")
     print(crt)
     for row in crt:
