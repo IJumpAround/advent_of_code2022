@@ -25,6 +25,7 @@ def solve(day, sample):
 
     return answer
 
+
 if __name__ == '__main__':
     _day_num = int(Path(__file__).stem.split('_')[-1])
     solve(_day_num, sample=True)
