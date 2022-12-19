@@ -1,9 +1,8 @@
 import copy
-import operator
 import os
 import sys
 from pathlib import Path
-from typing import Type, Tuple, List
+from typing import Tuple, List
 
 os.environ['LOG_LEVEL'] = 'ERROR'
 from aoc.utils.consts import SAMPLE_FILE, INPUT_FILE
@@ -17,10 +16,6 @@ L = logger
 Vertex = Tuple[Tuple[int, int], str, int]
 
 
-# def vertex_number():
-#     global vertex_number_counter
-
-
 def is_adj(v1: Vertex, v2: Vertex):
     r1, c1 = v1[0]
     r2, c2 = v2[0]
@@ -28,7 +23,9 @@ def is_adj(v1: Vertex, v2: Vertex):
     return abs(r1 - r2) <= 1 and c1 == c2 or abs(c1 - c2) <= 1 and r1 == r2
 
 
-def height_check(src: Vertex, dest: Vertex, step=1):
+# reverse if traveling from the E point towards a lower point
+def height_check(src: Vertex, dest: Vertex, reverse=True):
+
     s1, d1 = src[1], dest[1]
     s1 = s1 if s1 != 'E' else 'z'
     s1 = s1 if s1 != 'S' else 'a'
@@ -36,7 +33,10 @@ def height_check(src: Vertex, dest: Vertex, step=1):
     d1 = d1 if d1 != 'S' else 'a'
 
     # print(h1, h2)
-    return ord(d1) - ord(s1) <= 1
+    if reverse is False:
+        return ord(d1) - ord(s1) <= 1
+    else:
+        return ord(s1) - ord(d1) <= 1
 
 
 def stringify_node(n: Vertex):
@@ -57,11 +57,10 @@ def print_matrix(mtx, headers=True):
         if headers:
             line = f'{i:<3}| ' + line
         print(line)
-    # exit()
 
 
 @time_fn
-def solve(day, sample):
+def solve(day, sample, find_all=True, reverse=True):
     D = {}
     U = {}
     print(f"Running with {SAMPLE_FILE if sample else INPUT_FILE}")
@@ -76,11 +75,19 @@ def solve(day, sample):
 
     V: List[Vertex] = []
     node_num = 0
+
+    if reverse:
+        start_char = 'E'
+        end_char = 'a'
+    else:
+        start_char = 'S'
+        end_char = 'E'
+
     for i, r in enumerate(list_input):
         for j, c in enumerate(r):
             V.append(((i, j), c, node_num))
 
-            if c == 'S':
+            if c == start_char:
                 D[node_num] = 0
             else:
                 D[node_num] = sys.maxsize
@@ -89,41 +96,31 @@ def solve(day, sample):
     for v in V:
         print(stringify_node(v))
 
-    SPT = []
-    # print('D',D)
+    SPT = set()
     for i in range(len(V)):
         for j in range(len(V)):
 
             v1, v2 = V[i], V[j]
-            # print(v1, v2, f'({i},{j})', end='\t')
             if mtx[v1[2]][v2[2]] == 1:
                 continue
             if is_adj(v1, v2):
-                # print('adj', end='\t')
-                allowed_step = int(height_check(v1, v2))
-                # print('height check',allowed_step)
+                allowed_step = int(height_check(v1, v2, reverse=reverse))
                 mtx[i][j] = allowed_step
             else:
-                # print('not adj')
                 mtx[i][j] = 0
 
-    # print_matrix(mtx)
-    P = []
-    # for m in mtx: print(m)
     while True:
-        dist = [item for item in D.items() if V[item[0]] not in SPT]
-        # print(dist)
-        # print('SPT', SPT)
+        dist = [key for key in D if V[key][2] not in SPT]
         if not dist:
             break
-        i, _ = min(dist, key=lambda x: x[1])
+
+        i = min(dist, key=lambda x: D[x])
         u = V[i]
         print('checking neighbors of ', u)
-        if u in SPT:
+        if u[2] in SPT:
             continue
 
-        SPT.append(u)
-        P.append(u)
+        SPT.add(u[2])
 
         for j in range(len(mtx)):
             if j == i:
@@ -131,27 +128,20 @@ def solve(day, sample):
             if mtx[i][j] != 1:
                 continue
             v = V[j]
-            if v in SPT:
+            if v[2] in SPT:
                 continue
-            # print(V[j], 'before:', D[j], end='\t')
             D[j] = min(D[j], D[i] + 1)
-            # print('after:', D[j])
 
-        if u[1] == 'E':
+        if u[1] == end_char and not find_all:
             for j in range(len(mtx)):
                 if D[j] == sys.maxsize:
-                    # continue
                     break
-
-            print('done')
-            print(SPT)
-            # continue
             break
 
     finished_board = copy.deepcopy(list_input)
 
     steps = 0
-    m = max([len(str(num)) for num in D.values()])
+    m = max([len(str(num)) if num != sys.maxsize else 1 for num in D.values()])
     finished_board = [[_ for _ in row] for row in finished_board]
     for s in D:
 
@@ -160,25 +150,28 @@ def solve(day, sample):
         row = list(row)
         row[c] = str(D[s])
         finished_board[r] = row
-        # row = (" "*m).join(row)
-        # print(row)
-        # exit()
-        # finished_board[r] = row
+
     for i, row in enumerate(finished_board):
+        row = [str(_) if _ != str(sys.maxsize) else '∞' for _ in row]
         row = " ".join(row)
         finished_board[i] = "".join([f'{_:<{m+1}}' for _ in row.split()])
 
-    # exit()
     print('\noriginal board\n' + "\n".join(list_input))
     print('\nFinished board')
     print("\n".join(finished_board))
     print('steps', steps)
 
-    for i, u in enumerate(V):
-        if u[1] == 'E':
-            print(u)
-            print(D[i])
-            break
+    shortest = sys.maxsize
+    for u in V:
+        if u[1] == end_char:
+
+            if D[u[2]] == sys.maxsize:
+                print(f'Destination node can\'t be reached')
+                continue
+            print(f'Destination node {stringify_node(u)} can be reached in steps: {D[u[2]]}')
+            shortest = min(shortest, D[u[2]])
+
+    print('The shortest path is', shortest)
     return answer
 
 
