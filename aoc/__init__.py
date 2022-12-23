@@ -9,7 +9,7 @@ def aoc_root() -> Path:
 
 logger = logging.getLogger(__name__)
 
-level = os.environ.get('LOG_LEVEL') or logging.DEBUG
+level = os.environ.get('LOG_LEVEL') or logging.ERROR
 logger.setLevel(level)
 handler = logging.StreamHandler()
 handler.setLevel(level)
